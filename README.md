@@ -1,2 +1,2 @@
-# MSPR-Appli-Client
+# MSPR-Application Client
 Application Client / API REST

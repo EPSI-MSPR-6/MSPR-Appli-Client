@@ -1,0 +1,48 @@
+name: deploy API products
+on:
+  push:
+    branches:
+    - develop
+
+env: 
+  GOOGLE_PROJECT: ${{ secrets.PROJECT_ID }}
+  REGION: ${{ secrets.REGION }}
+  REPOSITORIES: ${{ secrets.REPO_ARTIFACT_REGISTRY }}
+  IMAGE_NAME: ${{ secrets.IMAGE_NAME }}
+  VERSION: ${{ secrets.VERSION }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Code checkout
+        uses: actions/checkout@v2
+
+      - name: Install GCloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.PROJECT_ID }}
+          service_account_key: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+          export_default_credentials: true
+          
+      - name: Authenticate with gcloud
+        env:
+          SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+        run: |
+          echo "$SERVICE_ACCOUNT_KEY" > gcloud-service-key.json
+          gcloud auth activate-service-account --key-file=gcloud-service-key.json
+
+      - name: Docker Authentication
+        run: |
+          gcloud auth configure-docker $REGION-docker.pkg.dev --quiet
+
+      - name: Build and push container
+        run: |
+          docker build -t $REGION-docker.pkg.dev/$GOOGLE_PROJECT/$REPOSITORIES/$IMAGE_NAME:$VERSION .
+          docker push $REGION-docker.pkg.dev/$GOOGLE_PROJECT/$REPOSITORIES/$IMAGE_NAME:$VERSION 
+          
+      - name: Deploy Cloud Run
+        run: |
+          gcloud run deploy $IMAGE_NAME \
+            --image $REGION-docker.pkg.dev/$GOOGLE_PROJECT/$REPOSITORIES/$IMAGE_NAME:$VERSION \
+            --region $REGION \

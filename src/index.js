@@ -1,7 +1,7 @@
 const express = require('express')
 //const db = require('./firebase.js'); // Importer le fichier firebase.js
 
-console.log(db)
+//console.log(db)
 
 const app = express()
 const port = 8080

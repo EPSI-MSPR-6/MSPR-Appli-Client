@@ -1,4 +1,4 @@
-name: deploy API products
+name: deploy API customers
 on:
   push:
     branches:

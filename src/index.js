@@ -1,26 +1,14 @@
-const express = require('express')
-//const db = require('./firebase.js'); // Importer le fichier firebase.js
-
-//console.log(db)
-
+const express = require('express');
+const bodyParser = require('body-parser');
+require('dotenv').config();
+const customerRoutes = require('./routes/customers.js');
 const app = express()
-const port = 8080
+const port = 8081
 
 
-/* app.use(express.json());
-
-app.post('/add', async (req, res) => {
-    try {
-        const docRef = await db.collection('collection-name').add(req.body);
-        res.status(200).send('Document added with ID: ' + docRef.id);
-    } catch (error) {
-        res.status(500).send('Error adding document: ' + error.message);
-    }
-}); */
-
-// Ajoutez d'autres routes et logiques ici
-
+app.use(bodyParser.json());
+app.use('/customers', customerRoutes);
 
 app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
+    console.log(`L'API Clients est exécutée à partir du port ${port}`);
 });

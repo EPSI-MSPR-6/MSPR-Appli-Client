@@ -41,9 +41,14 @@ router.post('/', async (req, res) => {
 // Met à jour une fiche client
 router.put('/:id', async (req, res) => {
     try {
-        const updatedCustomer = req.body;
-        await db.collection('customers').doc(req.params.id).set(updatedCustomer, { merge: true });
-        res.status(200).send('Client mis à jour');
+        const customerDoc = await db.collection('customers').doc(req.params.id).get();
+        if (!customerDoc.exists) {
+            res.status(404).send('Client non trouvé');
+        } else {
+            const updatedCustomer = req.body;
+            await db.collection('customers').doc(req.params.id).set(updatedCustomer, { merge: true });
+            res.status(200).send('Client mis à jour');
+        }
     } catch (error) {
         res.status(500).send('Erreur lors de la mise à jour du client : ' + error.message);
     }
@@ -52,8 +57,13 @@ router.put('/:id', async (req, res) => {
 // Supprime une fiche client
 router.delete('/:id', async (req, res) => {
     try {
-        await db.collection('customers').doc(req.params.id).delete();
-        res.status(200).send('Client supprimé');
+        const customerDoc = await db.collection('customers').doc(req.params.id).get();
+        if (!customerDoc.exists) {
+            res.status(404).send('Client non trouvé');
+        } else {
+            await db.collection('customers').doc(req.params.id).delete();
+            res.status(200).send('Client supprimé');
+        }
     } catch (error) {
         res.status(500).send('Erreur lors de la suppression du client : ' + error.message);
     }

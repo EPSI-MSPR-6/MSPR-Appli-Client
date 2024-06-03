@@ -1,8 +1,12 @@
-name: deploy API customers
+name: Build and Deploy API Customers
+
 on:
   push:
     branches:
-    - develop
+      - main
+      - develop
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 env: 
   GOOGLE_PROJECT: ${{ secrets.PROJECT_ID }}
@@ -12,8 +16,22 @@ env:
   VERSION: ${{ secrets.VERSION }}
 
 jobs:
+  sonarcloud:
+    name: SonarCloud
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
   deploy:
     runs-on: ubuntu-latest
+    needs: sonarcloud
     steps:
       - name: Code checkout
         uses: actions/checkout@v2

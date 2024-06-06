@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testExecutions version="1">
+  <file path="C:\Users\avand\OneDrive\Bureau\API_Clients\MSPR-Appli-Client\tests\unit\firebaseTestEnv.test.js">
+    <testCase name="Configuration et Nettoyage de Firebase Initialiser Firebase si non initialisé" duration="5"/>
+    <testCase name="Configuration et Nettoyage de Firebase Ne pas réinitialiser Firebase si déjà initialisé" duration="0"/>
+    <testCase name="Configuration et Nettoyage de Firebase Nettoyage des collections pendant la configuration" duration="1"/>
+    <testCase name="Configuration et Nettoyage de Firebase Nettoyage des collections pendant après les tests" duration="0"/>
+  </file>
+  <file path="C:\Users\avand\OneDrive\Bureau\API_Clients\MSPR-Appli-Client\tests\unit\firebase.test.js">
+    <testCase name="Firestore should be initialized" duration="5"/>
+  </file>
+  <file path="C:\Users\avand\OneDrive\Bureau\API_Clients\MSPR-Appli-Client\tests\integration\customers.test.js">
+    <testCase name="Customers API Create a new customer" duration="274"/>
+    <testCase name="Customers API Get all customers" duration="51"/>
+    <testCase name="Customers API Get customer by ID" duration="63"/>
+    <testCase name="Customers API Update a customer" duration="149"/>
+    <testCase name="Customers API Delete a customer" duration="183"/>
+    <testCase name="Customers API Erreur_404_GetClients" duration="44"/>
+    <testCase name="Customers API Erreur_404_UpdateClient" duration="46"/>
+    <testCase name="Customers API Erreur_404_DeleteClient" duration="55"/>
+    <testCase name="Erreur 500 Erreur_500_GetClients" duration="3"/>
+    <testCase name="Erreur 500 Erreur_404_GetClientByID" duration="3"/>
+    <testCase name="Erreur 500 Erreur_500_CreateClient" duration="3"/>
+    <testCase name="Erreur 500 Erreur_500_UpdateClient" duration="2"/>
+    <testCase name="Erreur 500 Erreur_500_DeleteClient" duration="3"/>
+  </file>
+</testExecutions>

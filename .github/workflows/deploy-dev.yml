@@ -15,6 +15,7 @@ env:
   IMAGE_NAME: ${{ secrets.IMAGE_NAME }}
   VERSION: ${{ secrets.VERSION }}
   FIREBASE_PRIVATE_KEY : ${{ secrets.FIREBASE_PK }}
+  FIREBASE_CLIENT_EMAIL : ${{ secrets.FIREBASE_EMAIL }}
 
 jobs:
   sonarcloud:

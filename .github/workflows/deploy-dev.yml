@@ -22,12 +22,25 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
-      - name: SonarCloud Scan
+          fetch-depth: 0 
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run tests and generate coverage
+        run: npm run test
+
+      - name: Upload coverage to SonarCloud
         uses: SonarSource/sonarcloud-github-action@master
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_SCANNER_OPTS: "-Dsonar.javascript.lcov.reportPaths=./coverage/lcov.info"
 
   deploy:
     runs-on: ubuntu-latest
@@ -63,4 +76,4 @@ jobs:
         run: |
           gcloud run deploy $IMAGE_NAME \
             --image $REGION-docker.pkg.dev/$GOOGLE_PROJECT/$REPOSITORIES/$IMAGE_NAME:$VERSION \
-            --region $REGION \
+            --region $REGION

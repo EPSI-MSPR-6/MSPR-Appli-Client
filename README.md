@@ -24,7 +24,7 @@ Répositoire git d'une des trois API indépendantes (Clients) permettant de gér
    npm install
    ```
 
-3. Créez un fichier `.env` à la racine du projet et ajoutez les variables d'environnement nécessaires
+3. Créez un fichier `.env` et `.env.test` à la racine du projet et ajoutez les variables d'environnement communiquées
 
 4. Démarrez le serveur :
 

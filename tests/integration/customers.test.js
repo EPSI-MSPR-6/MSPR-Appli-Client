@@ -2,21 +2,24 @@ const request = require('supertest');
 const express = require('express');
 const customersRouter = require('../../src/routes/customers.js');
 const db = require('../../src/firebase.js');
+const admin = require('firebase-admin');
 const { setupFirebaseTestEnv, teardownFirebaseTestEnv } = require('../firebaseTestEnv.js');
 
 const app = express();
 app.use(express.json());
 app.use('/customers', customersRouter);
 
-beforeAll(async () => {
-    await setupFirebaseTestEnv();
-});
 
-afterAll(async () => {
-    await teardownFirebaseTestEnv();
-});
 
 describe('Customers API', () => {
+    beforeAll(async () => {
+        await setupFirebaseTestEnv();
+    });
+    
+    afterAll(async () => {
+        await teardownFirebaseTestEnv();
+    });
+
     let customerId;
 
     test('Create a new customer', async () => {
@@ -81,5 +84,48 @@ describe('Customers API', () => {
         expect(response.text).toMatch(/Client non trouvé/);
     });
 
-    // Tests Erreurs 500 à venir
 });
+
+// Tests 500
+
+describe('Erreur 500', () => {
+
+    test('Erreur_500_GetClients', async () => {
+        db.collection = function(){throw new Error()}
+        const response = await request(app).get('/customers');
+        expect(response.status).toBe(500);
+        expect(response.text).toMatch(/Erreur lors de la récupération des clients : /);
+    });
+
+    test('Erreur_404_GetClientByID', async () => {
+        const response = await request(app).get('/customers/test');
+        expect(response.status).toBe(500);
+        expect(response.text).toMatch(/Erreur lors de la récupération du client par ID : /);
+    });
+
+    test('Erreur_500_CreateClient', async () => {
+        const response = await request(app)
+            .post('/customers')
+            .send({ name: 'Test', email: 'jesuis.untest@exemple.com' });
+
+        expect(response.status).toBe(500);
+        expect(response.text).toMatch(/Erreur lors de la création du client : /);
+    });
+
+    test('Erreur_500_UpdateClient', async () => {
+        const response = await request(app)
+            .put('/customers/test')
+            .send({ name: 'ValeurTest' });
+
+        expect(response.status).toBe(500);
+        expect(response.text).toMatch(/Erreur lors de la mise à jour du client : /);
+    });
+
+    test('Erreur_500_DeleteClient', async () => {
+        const response = await request(app).delete('/customers/test');
+        expect(response.status).toBe(500);
+        expect(response.text).toMatch(/Erreur lors de la suppression du client : /);
+    });
+    
+});
+

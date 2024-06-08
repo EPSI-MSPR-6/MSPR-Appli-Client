@@ -97,7 +97,7 @@ describe('Erreur 500', () => {
         expect(response.text).toMatch(/Erreur lors de la récupération des clients : /);
     });
 
-    test('Erreur_404_GetClientByID', async () => {
+    test('Erreur_500_GetClientByID', async () => {
         const response = await request(app).get('/customers/test');
         expect(response.status).toBe(500);
         expect(response.text).toMatch(/Erreur lors de la récupération du client par ID : /);

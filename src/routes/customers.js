@@ -3,6 +3,7 @@ const router = express.Router();
 const db = require('../firebase');
 
 const allowedFields = ['nom', 'adresse', 'ville', 'code_postal', 'pays', 'email'];
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const validateCreateCustomer = (req, res, next) => {
     const { email } = req.body;
@@ -10,7 +11,7 @@ const validateCreateCustomer = (req, res, next) => {
     if (!email) {
         return res.status(400).send('Le champ email est obligatoire.');
     }
-    if (typeof email !== 'string' || !/\S+@\S+\.\S+/.test(email)) {
+    if (typeof email !== 'string' || !emailRegex.test(email)) {
         return res.status(400).send('Le champ email doit être une adresse email valide.');
     }
 
@@ -29,7 +30,7 @@ const validateUpdateCustomer = (req, res, next) => {
     if (req.body.id_client) {
         return res.status(400).send("Le champ id_client ne peut pas être modifié.");
     }
-    if (email && (typeof email !== 'string' || !/\S+@\S+\.\S+/.test(email))) {
+    if (email && (typeof email !== 'string' || !emailRegex.test(email))) {
         return res.status(400).send('Le champ email doit être une adresse email valide.');
     }
 

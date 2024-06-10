@@ -10,69 +10,55 @@ const cityRegex = /^[a-zA-Z\s'-]+$/;
 const postalCodeRegex = /^\d{5}(-\d{4})?$/;
 const countryRegex = /^[a-zA-Z\s'-]+$/;
 
-const validateCreateCustomer = (req, res, next) => {
-    const { email, nom, adresse, ville, code_postal, pays } = req.body;
+const validateFields = (fields, isCreate) => {
+    const { email, nom, adresse, ville, code_postal, pays } = fields;
 
-    if (!email) {
-        return res.status(400).send('Le champ email est obligatoire.');
+    if (isCreate && !email) {
+        return 'Le champ email est obligatoire.';
     }
-    if (typeof email !== 'string' || !emailRegex.test(email)) {
-        return res.status(400).send('Le champ email doit être une adresse email valide.');
+    if (email && (typeof email !== 'string' || !emailRegex.test(email))) {
+        return 'Le champ email doit être une adresse email valide.';
     }
     if (nom && !nameRegex.test(nom)) {
-        return res.status(400).send('Le champ nom contient des caractères invalides.');
+        return 'Le champ nom contient des caractères invalides.';
     }
     if (adresse && !addressRegex.test(adresse)) {
-        return res.status(400).send('Le champ adresse contient des caractères invalides.');
+        return 'Le champ adresse contient des caractères invalides.';
     }
     if (ville && !cityRegex.test(ville)) {
-        return res.status(400).send('Le champ ville contient des caractères invalides.');
+        return 'Le champ ville contient des caractères invalides.';
     }
     if (code_postal && !postalCodeRegex.test(code_postal)) {
-        return res.status(400).send('Le champ code postal doit être un code postal valide.');
+        return 'Le champ code postal doit être un code postal valide.';
     }
     if (pays && !countryRegex.test(pays)) {
-        return res.status(400).send('Le champ pays contient des caractères invalides.');
+        return 'Le champ pays contient des caractères invalides.';
     }
 
-    const keys = Object.keys(req.body);
+    const keys = Object.keys(fields);
     const invalidKeys = keys.filter(key => !allowedFields.includes(key));
     if (invalidKeys.length > 0) {
-        return res.status(400).send(`Les champs suivants ne sont pas autorisés : ${invalidKeys.join(', ')}`);
+        return `Les champs suivants ne sont pas autorisés : ${invalidKeys.join(', ')}`;
+    }
+
+    return null;
+};
+
+const validateCreateCustomer = (req, res, next) => {
+    const error = validateFields(req.body, true);
+    if (error) {
+        return res.status(400).send(error);
     }
     next();
 };
 
 const validateUpdateCustomer = (req, res, next) => {
-    const { email, nom, adresse, ville, code_postal, pays } = req.body;
-
     if (req.body.id_client) {
         return res.status(400).send("Le champ id_client ne peut pas être modifié.");
     }
-    if (email && (typeof email !== 'string' || !emailRegex.test(email))) {
-        return res.status(400).send('Le champ email doit être une adresse email valide.');
-    }
-    if (nom && !nameRegex.test(nom)) {
-        return res.status(400).send('Le champ nom contient des caractères invalides.');
-    }
-    if (adresse && !addressRegex.test(adresse)) {
-        return res.status(400).send('Le champ adresse contient des caractères invalides.');
-    }
-    if (ville && !cityRegex.test(ville)) {
-        return res.status(400).send('Le champ ville contient des caractères invalides.');
-    }
-    if (code_postal && !postalCodeRegex.test(code_postal)) {
-        return res.status(400).send('Le champ code postal doit être un code postal valide.');
-    }
-    if (pays && !countryRegex.test(pays)) {
-        return res.status(400).send('Le champ pays contient des caractères invalides.');
-    }
-
-    const keys = Object.keys(req.body);
-    const invalidKeys = keys.filter(key => !allowedFields.includes(key));
-
-    if (invalidKeys.length > 0) {
-        return res.status(400).send(`Les champs suivants ne sont pas autorisés : ${invalidKeys.join(', ')}`);
+    const error = validateFields(req.body, false);
+    if (error) {
+        return res.status(400).send(error);
     }
     next();
 };

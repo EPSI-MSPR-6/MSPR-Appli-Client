@@ -4,15 +4,35 @@ const db = require('../firebase');
 
 const allowedFields = ['nom', 'adresse', 'ville', 'code_postal', 'pays', 'email'];
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const nameRegex = /^[a-zA-Z\s'-]+$/;
+const addressRegex = /^[a-zA-Z0-9\s,'-]+$/;
+const cityRegex = /^[a-zA-Z\s'-]+$/;
+const postalCodeRegex = /^\d{5}(-\d{4})?$/;
+const countryRegex = /^[a-zA-Z\s'-]+$/;
 
 const validateCreateCustomer = (req, res, next) => {
-    const { email } = req.body;
+    const { email, nom, adresse, ville, code_postal, pays } = req.body;
 
     if (!email) {
         return res.status(400).send('Le champ email est obligatoire.');
     }
     if (typeof email !== 'string' || !emailRegex.test(email)) {
         return res.status(400).send('Le champ email doit être une adresse email valide.');
+    }
+    if (nom && !nameRegex.test(nom)) {
+        return res.status(400).send('Le champ nom contient des caractères invalides.');
+    }
+    if (adresse && !addressRegex.test(adresse)) {
+        return res.status(400).send('Le champ adresse contient des caractères invalides.');
+    }
+    if (ville && !cityRegex.test(ville)) {
+        return res.status(400).send('Le champ ville contient des caractères invalides.');
+    }
+    if (code_postal && !postalCodeRegex.test(code_postal)) {
+        return res.status(400).send('Le champ code postal doit être un code postal valide.');
+    }
+    if (pays && !countryRegex.test(pays)) {
+        return res.status(400).send('Le champ pays contient des caractères invalides.');
     }
 
     const keys = Object.keys(req.body);
@@ -23,15 +43,29 @@ const validateCreateCustomer = (req, res, next) => {
     next();
 };
 
-// Middleware pour valider les champs du client lors de la mise à jour
 const validateUpdateCustomer = (req, res, next) => {
-    const { email } = req.body;
+    const { email, nom, adresse, ville, code_postal, pays } = req.body;
 
     if (req.body.id_client) {
         return res.status(400).send("Le champ id_client ne peut pas être modifié.");
     }
     if (email && (typeof email !== 'string' || !emailRegex.test(email))) {
         return res.status(400).send('Le champ email doit être une adresse email valide.');
+    }
+    if (nom && !nameRegex.test(nom)) {
+        return res.status(400).send('Le champ nom contient des caractères invalides.');
+    }
+    if (adresse && !addressRegex.test(adresse)) {
+        return res.status(400).send('Le champ adresse contient des caractères invalides.');
+    }
+    if (ville && !cityRegex.test(ville)) {
+        return res.status(400).send('Le champ ville contient des caractères invalides.');
+    }
+    if (code_postal && !postalCodeRegex.test(code_postal)) {
+        return res.status(400).send('Le champ code postal doit être un code postal valide.');
+    }
+    if (pays && !countryRegex.test(pays)) {
+        return res.status(400).send('Le champ pays contient des caractères invalides.');
     }
 
     const keys = Object.keys(req.body);

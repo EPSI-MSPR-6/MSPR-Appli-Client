@@ -2,7 +2,6 @@ const request = require('supertest');
 const express = require('express');
 const customersRouter = require('../../src/routes/customers.js');
 const db = require('../../src/firebase.js');
-const admin = require('firebase-admin');
 const { setupFirebaseTestEnv, teardownFirebaseTestEnv } = require('../firebaseTestEnv.js');
 
 const app = express();
@@ -21,7 +20,7 @@ describe('Customers API', () => {
     let customerId;
 
     describe('ClientAPI', () => {
-        test('Create a new customer', async () => {
+        test('Création Client', async () => {
             const response = await request(app)
                 .post('/customers')
                 .send({ nom: 'Test', email: 'jesuis.untest@exemple.com' });
@@ -33,29 +32,29 @@ describe('Customers API', () => {
             customerId = response.text.split('Client créé avec son ID : ')[1];
         });
 
-        test('Get all customers', async () => {
+        test('Récupération de tous les clients', async () => {
             const response = await request(app).get('/customers');
             expect(response.status).toBe(200);
             expect(response.body).toBeInstanceOf(Array);
             expect(response.body.length).toBeGreaterThan(0);
         });
 
-        test('Get customer by ID', async () => {
+        test('Récuparation Client via ID', async () => {
             const response = await request(app).get(`/customers/${customerId}`);
             expect(response.status).toBe(200);
             expect(response.body).toHaveProperty('id', customerId);
         });
 
-        test('Update a customer', async () => {
+        test('Mis à jour Client', async () => {
             const response = await request(app)
                 .put(`/customers/${customerId}`)
-                .send({ nom: 'Test 2', email: 'jesuis.untest2@exemple.com' });
+                .send({ nom: 'Test-Deux', email: 'jesuis.untest2@exemple.com' });
 
             expect(response.status).toBe(200);
             expect(response.text).toBe('Client mis à jour');
         });
 
-        test('Delete a customer', async () => {
+        test('Suppression Client', async () => {
             const response = await request(app).delete(`/customers/${customerId}`);
             expect(response.status).toBe(200);
             expect(response.text).toBe('Client supprimé');
@@ -138,6 +137,97 @@ describe('Customers API', () => {
 
             expect(response.status).toBe(400);
             expect(response.text).toBe('Les champs suivants ne sont pas autorisés : e_mail');
+        });
+
+        // Tests Regex pour création et mise à jour
+        test('Erreur_400_CreateCustomer_InvalidName', async () => {
+            const response = await request(app)
+                .post('/customers')
+                .send({ nom: 'Invalid@Name', email: 'jesuis.untest@exemple.com' });
+
+            expect(response.status).toBe(400);
+            expect(response.text).toBe('Le champ nom contient des caractères invalides.');
+        });
+
+        test('Erreur_400_CreateCustomer_InvalidAddress', async () => {
+            const response = await request(app)
+                .post('/customers')
+                .send({ nom: 'Test', email: 'jesuis.untest@exemple.com', adresse: '123 Main St. @' });
+
+            expect(response.status).toBe(400);
+            expect(response.text).toBe('Le champ adresse contient des caractères invalides.');
+        });
+
+        test('Erreur_400_CreateCustomer_InvalidCity', async () => {
+            const response = await request(app)
+                .post('/customers')
+                .send({ nom: 'Test', email: 'jesuis.untest@exemple.com', ville: 'C1ty' });
+
+            expect(response.status).toBe(400);
+            expect(response.text).toBe('Le champ ville contient des caractères invalides.');
+        });
+
+        test('Erreur_400_CreateCustomer_InvalidPostalCode', async () => {
+            const response = await request(app)
+                .post('/customers')
+                .send({ nom: 'Test', email: 'jesuis.untest@exemple.com', code_postal: 'ABCDE' });
+
+            expect(response.status).toBe(400);
+            expect(response.text).toBe('Le champ code postal doit être un code postal valide.');
+        });
+
+        test('Erreur_400_CreateCustomer_InvalidCountry', async () => {
+            const response = await request(app)
+                .post('/customers')
+                .send({ nom: 'Test', email: 'jesuis.untest@exemple.com', pays: 'Fr@nc3' });
+
+            expect(response.status).toBe(400);
+            expect(response.text).toBe('Le champ pays contient des caractères invalides.');
+        });
+
+        test('Erreur_400_UpdateCustomer_InvalidName', async () => {
+            const response = await request(app)
+                .put(`/customers/${customerId}`)
+                .send({ nom: 'Invalid@Name' });
+
+            expect(response.status).toBe(400);
+            expect(response.text).toBe('Le champ nom contient des caractères invalides.');
+        });
+
+        test('Erreur_400_UpdateCustomer_InvalidAddress', async () => {
+            const response = await request(app)
+                .put(`/customers/${customerId}`)
+                .send({ adresse: '123 Main St. @' });
+
+            expect(response.status).toBe(400);
+            expect(response.text).toBe('Le champ adresse contient des caractères invalides.');
+        });
+
+        test('Erreur_400_UpdateCustomer_InvalidCity', async () => {
+            const response = await request(app)
+                .put(`/customers/${customerId}`)
+                .send({ ville: 'C1ty' });
+
+            expect(response.status).toBe(400);
+            expect(response.text).toBe('Le champ ville contient des caractères invalides.');
+        });
+
+        test('Erreur_400_UpdateCustomer_InvalidPostalCode', async () => {
+            const response = await request(app)
+                .put(`/customers/${customerId}`)
+                .send({ code_postal: 'ABCDE' });
+
+            expect(response.status).toBe(400);
+            expect(response.text).toBe('Le champ code postal doit être un code postal valide.');
+        });
+
+        test('Erreur_400_UpdateCustomer_InvalidCountry', async () => {
+            const response = await request(app)
+                .put(`/customers/${customerId}`)
+                .send({ pays: 'Fr@nc3' });
+
+            expect(response.status).toBe(400);
+            expect(response.text).toBe('Le champ pays contient des caractères invalides.');
         });
     });
 

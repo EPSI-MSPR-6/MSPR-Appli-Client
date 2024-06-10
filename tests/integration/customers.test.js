@@ -4,6 +4,7 @@ const customersRouter = require('../../src/routes/customers.js');
 const db = require('../../src/firebase.js');
 const { setupFirebaseTestEnv, teardownFirebaseTestEnv } = require('../firebaseTestEnv.js');
 
+require('dotenv').config({ path: '.env.test' });
 const ApiKey = process.env.API_KEY
 
 const app = express();

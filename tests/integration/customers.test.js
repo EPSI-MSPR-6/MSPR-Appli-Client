@@ -4,6 +4,8 @@ const customersRouter = require('../../src/routes/customers.js');
 const db = require('../../src/firebase.js');
 const { setupFirebaseTestEnv, teardownFirebaseTestEnv } = require('../firebaseTestEnv.js');
 
+const ApiKey = process.env.API_KEY
+
 const app = express();
 app.use(express.json());
 app.use('/customers', customersRouter);
@@ -18,6 +20,12 @@ describe('Customers API', () => {
     });
 
     let customerId;
+
+    const getCustomersWithApiKey = async (apiKey = ApiKey) => {
+        return await request(app)
+            .get('/customers')
+            .set('x-api-key', apiKey);
+    };
 
     const createCustomer = async (customerData) => {
         return await request(app)
@@ -35,7 +43,7 @@ describe('Customers API', () => {
         return await request(app)
             .delete(`/customers/${id}`);
     };
-
+ 
     describe('ClientAPI', () => {
         test('Création Client', async () => {
             const response = await createCustomer({ nom: 'Test', email: 'jesuis.untest@exemple.com' });
@@ -48,7 +56,7 @@ describe('Customers API', () => {
         });
 
         test('Récupération de tous les clients', async () => {
-            const response = await request(app).get('/customers');
+            const response = await getCustomersWithApiKey();
             expect(response.status).toBe(200);
             expect(response.body).toBeInstanceOf(Array);
             expect(response.body.length).toBeGreaterThan(0);
@@ -71,6 +79,15 @@ describe('Customers API', () => {
             const response = await deleteCustomer(customerId);
             expect(response.status).toBe(200);
             expect(response.text).toBe('Client supprimé');
+        });
+    });
+
+    describe('Tests403', () => {
+        test('Erreur_403_GetCustomers', async () => {
+            const invalidApiKey = 'invalid-api-key';
+            const response = await getCustomersWithApiKey(invalidApiKey);
+            expect(response.status).toBe(403);
+            expect(response.body).toHaveProperty('message', 'Forbidden: Invalid API Key');
         });
     });
 
@@ -214,7 +231,7 @@ describe('Customers API', () => {
     describe('Tests500', () => {
         test('Erreur_500_GetClients', async () => {
             db.collection = function() { throw new Error(); };
-            const response = await request(app).get('/customers');
+            const response = await getCustomersWithApiKey();
             expect(response.status).toBe(500);
             expect(response.text).toMatch(/Erreur lors de la récupération des clients : /);
         });

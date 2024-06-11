@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../firebase.js');
 const { validateCreateCustomer, validateUpdateCustomer, checkApiKey } = require('../services/middlewares.js');
+const { publishMessage } = require('../services/pubsub.js');
 
 router.get('/', checkApiKey, async (req, res) => {
     try {
@@ -58,6 +59,14 @@ router.delete('/:id', async (req, res) => {
             res.status(404).send('Client non trouvé');
         } else {
             await db.collection('customers').doc(req.params.id).delete();
+
+            // Publication Message Pub/Sub
+            await publishMessage('client-actions', {
+                action: 'DELETE_CLIENT',
+                clientId: req.params.id,
+                message: 'Client account deletion'
+            });
+
             res.status(200).send('Client supprimé');
         }
     } catch (error) {

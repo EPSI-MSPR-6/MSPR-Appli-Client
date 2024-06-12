@@ -42,11 +42,17 @@ router.put('/:id', validateUpdateCustomer, async (req, res) => {
         const customerDoc = await db.collection('customers').doc(req.params.id).get();
         if (!customerDoc.exists) {
             res.status(404).send('Client non trouvé');
-        } else {
-            const updatedCustomer = req.body;
-            await db.collection('customers').doc(req.params.id).set(updatedCustomer, { merge: true });
-            res.status(200).send('Client mis à jour');
+            return;
         }
+        
+        const updatedCustomer = req.body;
+        
+        if (updatedCustomer.id) {
+            delete updatedCustomer.id;
+        }
+        
+        await db.collection('customers').doc(req.params.id).set(updatedCustomer, { merge: true });
+        res.status(200).send('Client mis à jour');
     } catch (error) {
         res.status(500).send('Erreur lors de la mise à jour du client : ' + error.message);
     }

@@ -47,10 +47,6 @@ router.put('/:id', validateUpdateCustomer, async (req, res) => {
         
         const updatedCustomer = req.body;
         
-        if (updatedCustomer.id) {
-            delete updatedCustomer.id;
-        }
-        
         await db.collection('customers').doc(req.params.id).set(updatedCustomer, { merge: true });
         res.status(200).send('Client mis à jour');
     } catch (error) {
@@ -81,32 +77,36 @@ router.delete('/:id', async (req, res) => {
 });
 
 router.post('/pubsub', async (req, res) => {
-    const message = req.body.message;
+    try {
+        const message = req.body.message;
 
-    if (!message || !message.data) {
-        return res.status(400).send('Format de message non valide');
-    }
-
-    const data = Buffer.from(message.data, 'base64').toString();
-    const parsedData = JSON.parse(data);
-
-    if (parsedData.action === 'VERIF_CLIENT') {
-        const clientId = parsedData.clientId;
-        const customerDoc = await db.collection('customers').doc(clientId).get();
-
-        if (!customerDoc.exists) {
-            await publishMessage('client-actions', {
-                action: 'DELETE_CLIENT',
-                clientId: clientId,
-                message: 'Client account deletion'
-            });
-        } else {
-            res.status(200).send('Client vérifié');
+        if (!message || !message.data) {
+            return res.status(400).send('Format de message non valide');
         }
-    } else {
-        res.status(400).send('Action non reconnue');
+
+        const data = Buffer.from(message.data, 'base64').toString();
+        const parsedData = JSON.parse(data);
+
+        if (parsedData.action === 'VERIF_CLIENT') {
+            const clientId = parsedData.clientId;
+            const customerDoc = await db.collection('customers').doc(clientId).get();
+
+            if (!customerDoc.exists) {
+                await publishMessage('client-actions', {
+                    action: 'DELETE_CLIENT',
+                    clientId: clientId,
+                    message: 'Client account deletion'
+                });
+                return res.status(200).send('Action de suppression publiée');
+            } else {
+                return res.status(200).send('Client vérifié');
+            }
+        } else {
+            return res.status(400).send('Action non reconnue');
+        }
+    } catch (error) {
+        return res.status(500).send('Erreur lors de la vérification du client : ' + error.message);
     }
 });
-
 
 module.exports = router;

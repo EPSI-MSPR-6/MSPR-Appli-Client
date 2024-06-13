@@ -3,6 +3,11 @@ const express = require('express');
 const customersRouter = require('../../src/routes/customers.js');
 const db = require('../../src/firebase.js');
 const { setupFirebaseTestEnv, teardownFirebaseTestEnv } = require('../firebaseTestEnv.js');
+const { publishMessage } = require('../../src/services/pubsub.js');
+
+jest.mock('../../src/services/pubsub.js', () => ({
+    publishMessage: jest.fn()
+}));
 
 const ApiKey = process.env.API_KEY
 
@@ -44,6 +49,13 @@ describe('Customers API', () => {
             .delete(`/customers/${id}`);
     };
  
+    const verifyClientPubSub = async (clientId) => {
+        const message = Buffer.from(JSON.stringify({ action: 'VERIF_CLIENT', clientId })).toString('base64');
+        return await request(app)
+            .post('/customers/pubsub')
+            .send({ message: { data: message } });
+    };
+
     describe('ClientAPI', () => {
         test('Création Client', async () => {
             const response = await createCustomer({ nom: 'Test', email: 'jesuis.untest@exemple.com' });
@@ -75,12 +87,86 @@ describe('Customers API', () => {
             expect(response.text).toBe('Client mis à jour');
         });
 
+        test('Pub/Sub - VERIF_CLIENT - Client Existe', async () => {
+            const response = await verifyClientPubSub(customerId);
+            expect(response.status).toBe(200);
+            expect(response.text).toBe('Client vérifié');
+        });
+
         test('Suppression Client', async () => {
             const response = await deleteCustomer(customerId);
             expect(response.status).toBe(200);
             expect(response.text).toBe('Client supprimé');
         });
     });
+
+
+    describe('Tests Pub/Sub', () => {
+        test('Pub/Sub - VERIF_CLIENT - Client Inexistant', async () => {
+            const invalidClientId = 'nonexistent-client-id';
+            publishMessage.mockResolvedValueOnce();
+
+            const response = await verifyClientPubSub(invalidClientId);
+            expect(response.status).toBe(200);
+            expect(response.text).toBe('Action de suppression publiée');
+            expect(publishMessage).toHaveBeenCalledWith('client-actions', {
+                action: 'DELETE_CLIENT',
+                clientId: invalidClientId,
+                message: 'Client account deletion'
+            });
+        });
+
+        test('Pub/Sub - Action Inconnue', async () => {
+            const message = {
+                message: {
+                    data: Buffer.from(JSON.stringify({ action: 'UNKNOWN_ACTION' })).toString('base64')
+                }
+            };
+
+            const response = await request(app)
+                .post('/customers/pubsub')
+                .send(message);
+            expect(response.status).toBe(400);
+            expect(response.text).toBe('Action non reconnue');
+        });
+
+        test('Pub/Sub - Echec ( Format non valide )', async () => {
+            const message = {
+                message: {}
+            };
+
+            const response = await request(app)
+                .post('/customers/pubsub')
+                .send(message);
+            expect(response.status).toBe(400);
+            expect(response.text).toBe('Format de message non valide');
+        });
+
+        test('Pub/Sub - VERIF_CLIENT - Echec ( Test 500 )', async () => {
+            const message = {
+                message: {
+                    data: Buffer.from(JSON.stringify({
+                        action: 'VERIF_CLIENT',
+                        clientId: 'nonExistentClient'
+                    })).toString('base64')
+                }
+            };
+    
+            jest.spyOn(db, 'collection').mockImplementationOnce(() => {
+                return {
+                    doc: jest.fn().mockReturnThis(),
+                    get: jest.fn().mockRejectedValue(new Error('Test error'))
+                };
+            });
+    
+            const response = await request(app)
+                .post('/customers/pubsub')
+                .send(message);
+            expect(response.status).toBe(500);
+            expect(response.text).toMatch(/Erreur lors de la vérification du client : /);
+        });
+    });
+
 
     describe('Tests403', () => {
         test('Erreur_403_GetCustomers', async () => {
@@ -230,34 +316,35 @@ describe('Customers API', () => {
 
     describe('Tests500', () => {
         test('Erreur_500_GetClients', async () => {
-            db.collection = function() { throw new Error(); };
+            jest.spyOn(db, 'collection').mockImplementation(() => { throw new Error(); });
             const response = await getCustomersWithApiKey();
             expect(response.status).toBe(500);
             expect(response.text).toMatch(/Erreur lors de la récupération des clients : /);
         });
 
         test('Erreur_500_GetClientByID', async () => {
+            jest.spyOn(db, 'collection').mockImplementation(() => { throw new Error(); });
             const response = await request(app).get('/customers/test');
             expect(response.status).toBe(500);
             expect(response.text).toMatch(/Erreur lors de la récupération du client par ID : /);
         });
 
         test('Erreur_500_CreateClient', async () => {
-            db.collection = function() { throw new Error(); };
+            jest.spyOn(db, 'collection').mockImplementation(() => { throw new Error(); });
             const response = await createCustomer({ nom: 'Test', email: 'jesuis.untest@exemple.com' });
             expect(response.status).toBe(500);
             expect(response.text).toMatch(/Erreur lors de la création du client : /);
         });
 
         test('Erreur_500_UpdateClient', async () => {
-            db.collection = function() { throw new Error(); };
+            jest.spyOn(db, 'collection').mockImplementation(() => { throw new Error(); });
             const response = await updateCustomer('test', { nom: 'ValeurTest' });
             expect(response.status).toBe(500);
             expect(response.text).toMatch(/Erreur lors de la mise à jour du client : /);
         });
 
         test('Erreur_500_DeleteClient', async () => {
-            db.collection = function() { throw new Error(); };
+            jest.spyOn(db, 'collection').mockImplementation(() => { throw new Error(); });
             const response = await deleteCustomer('test');
             expect(response.status).toBe(500);
             expect(response.text).toMatch(/Erreur lors de la suppression du client : /);

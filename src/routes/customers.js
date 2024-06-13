@@ -97,20 +97,20 @@ router.post('/pubsub', async (req, res) => {
     const parsedData = JSON.parse(data);
 
     if (parsedData.action === 'VERIF_CLIENT') {
-        const clientId = parsedData.clientId;
-        await verifyClient(clientId, res);
+        const { clientId, orderId } = parsedData;
+        await verifyClient(clientId, orderId, res);
     } else {
         res.status(400).send('Action non reconnue');
     }
 });
 
-async function verifyClient(clientId, res) {
+async function verifyClient(clientId, orderId, res) {
     try {
         const customerDoc = await db.collection('customers').doc(clientId).get();
         if (!customerDoc.exists) {
             console.error(`Le client ${clientId} n'existe pas`);
             
-            // Publier un message Pub/Sub pour supprimer le client
+            // Le client n'existe pas
             await publishMessage('client-actions', {
                 action: 'DELETE_CLIENT',
                 clientId: clientId,
@@ -119,7 +119,15 @@ async function verifyClient(clientId, res) {
 
             res.status(200).send(`Le client ${clientId} n'existe pas. Message DELETE_CLIENT envoyé.`);
         } else {
-            res.status(200).send(`Le client ${clientId} existe. Je continue les vérifications.`);
+            // Le client existe
+            await publishMessage('client-order-actions', {
+                action: 'CLIENT_EXISTS',
+                orderId: orderId,
+                clientId: clientId,
+                message: `Client ${clientId} existe, continuer avec la commande ${orderId}`
+            });
+
+            res.status(200).send(`Le client ${clientId} existe. Message CLIENT_EXISTS envoyé.`);
         }
     } catch (error) {
         res.status(500).send('Erreur lors de la vérification du client : ' + error.message);

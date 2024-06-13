@@ -85,7 +85,7 @@ describe('Customers API', () => {
         test('Vérification Client Pub/Sub (client existant)', async () => {
             const response = await verifyClientPubSub(customerId);
             expect(response.status).toBe(200);
-            expect(response.text).toBe(`Le client ${customerId} existe. Je continue les vérifications.`);
+            expect(response.text).toBe(`Le client ${customerId} existe. Message CLIENT_EXISTS envoyé.`);
         });
 
         test('Vérification Client Pub/Sub (client inexistant)', async () => {

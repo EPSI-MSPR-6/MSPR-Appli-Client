@@ -85,14 +85,14 @@ describe('Customers API', () => {
         test('Vérification Client Pub/Sub (client existant)', async () => {
             const response = await verifyClientPubSub(customerId);
             expect(response.status).toBe(200);
-            expect(response.text).toBe(`Le client ${customerId} existe. Je continue les vérifications`);
+            expect(response.text).toBe(`Le client ${customerId} existe. Je continue les vérifications.`);
         });
 
         test('Vérification Client Pub/Sub (client inexistant)', async () => {
             const invalidClientId = 'nonexistent-client-id';
             const response = await verifyClientPubSub(invalidClientId);
             expect(response.status).toBe(200);
-            expect(response.text).toBe(`Le client ${invalidClientId} n'existe pas`);
+            expect(response.text).toBe(`Le client ${invalidClientId} n'existe pas. Message DELETE_CLIENT envoyé.`);
         });
 
         test('Suppression Client', async () => {

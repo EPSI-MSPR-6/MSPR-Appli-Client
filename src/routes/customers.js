@@ -117,12 +117,13 @@ async function verifyClient(clientId, res) {
                 message: `Client ${clientId} n'existe pas`
             });
 
-            res.status(200).send(`Le client ${clientId} n'existe pas`);
+            res.status(200).send(`Le client ${clientId} n'existe pas. Message DELETE_CLIENT envoyé.`);
         } else {
-            res.status(200).send(`Le client ${clientId} existe. Je continue les vérifications`);
+            res.status(200).send(`Le client ${clientId} existe. Je continue les vérifications.`);
         }
     } catch (error) {
         res.status(500).send('Erreur lors de la vérification du client : ' + error.message);
     }
 }
+
 module.exports = router;

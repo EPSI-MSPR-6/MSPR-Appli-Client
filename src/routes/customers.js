@@ -4,6 +4,7 @@ const db = require('../firebase.js');
 const { validateCreateCustomer, validateUpdateCustomer, checkApiKey } = require('../services/middlewares.js');
 const { publishMessage } = require('../services/pubsub.js');
 
+// Récupération des clients
 router.get('/', checkApiKey, async (req, res) => {
     try {
         const customersSnapshot = await db.collection('customers').get();
@@ -14,6 +15,7 @@ router.get('/', checkApiKey, async (req, res) => {
     }
 });
 
+// Récupération du client via ID 
 router.get('/:id', async (req, res) => {
     try {
         const customerDoc = await db.collection('customers').doc(req.params.id).get();
@@ -27,6 +29,7 @@ router.get('/:id', async (req, res) => {
     }
 });
 
+// Création d'un client 
 router.post('/', validateCreateCustomer, async (req, res) => {
     try {
         const newCustomer = req.body;
@@ -37,6 +40,7 @@ router.post('/', validateCreateCustomer, async (req, res) => {
     }
 });
 
+// Mis à jour d'un client 
 router.put('/:id', validateUpdateCustomer, async (req, res) => {
     try {
         const customerDoc = await db.collection('customers').doc(req.params.id).get();
@@ -58,6 +62,7 @@ router.put('/:id', validateUpdateCustomer, async (req, res) => {
     }
 });
 
+// Suppression d'un client 
 router.delete('/:id', async (req, res) => {
     try {
         const customerDoc = await db.collection('customers').doc(req.params.id).get();
@@ -80,4 +85,44 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
+// Endpoint Pub/Sub pour vérifier le client
+router.post('/pubsub', async (req, res) => {
+    const message = req.body.message;
+
+    if (!message || !message.data) {
+        return res.status(400).send('Format de message non valide');
+    }
+
+    const data = Buffer.from(message.data, 'base64').toString();
+    const parsedData = JSON.parse(data);
+
+    if (parsedData.action === 'VERIF_CLIENT') {
+        const clientId = parsedData.clientId;
+        await verifyClient(clientId, res);
+    } else {
+        res.status(400).send('Action non reconnue');
+    }
+});
+
+async function verifyClient(clientId, res) {
+    try {
+        const customerDoc = await db.collection('customers').doc(clientId).get();
+        if (!customerDoc.exists) {
+            console.error(`Le client ${clientId} n'existe pas`);
+            
+            // Publier un message Pub/Sub pour supprimer le client
+            await publishMessage('client-actions', {
+                action: 'DELETE_CLIENT',
+                clientId: clientId,
+                message: `Client ${clientId} n'existe pas`
+            });
+
+            res.status(200).send(`Le client ${clientId} n'existe pas`);
+        } else {
+            res.status(200).send(`Le client ${clientId} existe. Je continue les vérifications`);
+        }
+    } catch (error) {
+        res.status(500).send('Erreur lors de la vérification du client : ' + error.message);
+    }
+}
 module.exports = router;

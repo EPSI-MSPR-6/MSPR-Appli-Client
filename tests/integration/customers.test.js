@@ -43,6 +43,13 @@ describe('Customers API', () => {
         return await request(app)
             .delete(`/customers/${id}`);
     };
+
+    const verifyClientPubSub = async (clientId) => {
+        const message = Buffer.from(JSON.stringify({ action: 'VERIF_CLIENT', clientId })).toString('base64');
+        return await request(app)
+            .post('/customers/pubsub')
+            .send({ message: { data: message } });
+    };
  
     describe('ClientAPI', () => {
         test('Création Client', async () => {
@@ -75,12 +82,26 @@ describe('Customers API', () => {
             expect(response.text).toBe('Client mis à jour');
         });
 
+        test('Vérification Client Pub/Sub (client existant)', async () => {
+            const response = await verifyClientPubSub(customerId);
+            expect(response.status).toBe(200);
+            expect(response.text).toBe(`Le client ${customerId} existe. Je continue les vérifications`);
+        });
+
+        test('Vérification Client Pub/Sub (client inexistant)', async () => {
+            const invalidClientId = 'nonexistent-client-id';
+            const response = await verifyClientPubSub(invalidClientId);
+            expect(response.status).toBe(200);
+            expect(response.text).toBe(`Le client ${invalidClientId} n'existe pas`);
+        });
+
         test('Suppression Client', async () => {
             const response = await deleteCustomer(customerId);
             expect(response.status).toBe(200);
             expect(response.text).toBe('Client supprimé');
         });
     });
+    
 
     describe('Tests403', () => {
         test('Erreur_403_GetCustomers', async () => {
@@ -226,6 +247,25 @@ describe('Customers API', () => {
             expect(response.status).toBe(400);
             expect(response.text).toBe('Le champ pays contient des caractères invalides.');
         });
+
+        test('Erreur 400 - PubSub Message Format', async () => {
+            const response = await request(app)
+                .post('/customers/pubsub')
+                .send({ message: null });
+            
+            expect(response.status).toBe(400);
+            expect(response.text).toBe('Format de message non valide');
+        });
+
+        test('Erreur 400 - PubSub Action Non Reconnue', async () => {
+            const message = Buffer.from(JSON.stringify({ action: 'UNKNOWN_ACTION', clientId: 'someId' })).toString('base64');
+            const response = await request(app)
+                .post('/customers/pubsub')
+                .send({ message: { data: message } });
+
+            expect(response.status).toBe(400);
+            expect(response.text).toBe('Action non reconnue');
+        });
     });
 
     describe('Tests500', () => {
@@ -261,6 +301,18 @@ describe('Customers API', () => {
             const response = await deleteCustomer('test');
             expect(response.status).toBe(500);
             expect(response.text).toMatch(/Erreur lors de la suppression du client : /);
+        });
+
+        test('Erreur 500 - VerificationClient Pub/Sub', async () => {
+            db.collection = function() { throw new Error('Simulated Database Error'); };
+            const invalidClientId = 'nonexistent-client-id';
+            const message = Buffer.from(JSON.stringify({ action: 'VERIF_CLIENT', clientId: invalidClientId })).toString('base64');
+            const response = await request(app)
+                .post('/customers/pubsub')
+                .send({ message: { data: message } });
+
+            expect(response.status).toBe(500);
+            expect(response.text).toMatch(/Erreur lors de la vérification du client : /);
         });
     });
 });

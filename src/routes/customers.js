@@ -40,7 +40,7 @@ router.post('/', validateCreateCustomer, async (req, res) => {
     }
 });
 
-// Mis à jour d'un client 
+// Mise à jour d'un client 
 router.put('/:id', validateUpdateCustomer, async (req, res) => {
     try {
         const customerDoc = await db.collection('customers').doc(req.params.id).get();
@@ -97,14 +97,14 @@ router.post('/pubsub', async (req, res) => {
     const parsedData = JSON.parse(data);
 
     if (parsedData.action === 'VERIF_CLIENT') {
-        const { clientId, orderId } = parsedData;
-        await verifyClient(clientId, orderId, res);
+        const { clientId } = parsedData;
+        await verifyClient(clientId, res);
     } else {
         res.status(400).send('Action non reconnue');
     }
 });
 
-async function verifyClient(clientId, orderId, res) {
+async function verifyClient(clientId, res) {
     try {
         const customerDoc = await db.collection('customers').doc(clientId).get();
         if (!customerDoc.exists) {
@@ -122,9 +122,8 @@ async function verifyClient(clientId, orderId, res) {
             // Le client existe
             await publishMessage('client-order-actions', {
                 action: 'CLIENT_EXISTS',
-                orderId: orderId,
                 clientId: clientId,
-                message: `Client ${clientId} existe, continuer avec la commande ${orderId}`
+                message: `Client ${clientId} existe`
             });
 
             res.status(200).send(`Le client ${clientId} existe. Message CLIENT_EXISTS envoyé.`);

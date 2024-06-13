@@ -4,6 +4,23 @@ const db = require('../firebase.js');
 const { validateCreateCustomer, validateUpdateCustomer, checkApiKey } = require('../services/middlewares.js');
 const { publishMessage } = require('../services/pubsub.js');
 
+
+const checkDuplicateEmail = async (email, customerId = null) => {
+    try {
+        let query = db.collection('customers').where('email', '==', email);
+        const customersSnapshot = await query.get();
+        if (!customersSnapshot.empty) {
+            if (customerId) {
+                return customersSnapshot.docs.some(doc => doc.id !== customerId);
+            }
+            return true;
+        }
+        return false;
+    } catch (error) {
+        throw new Error('Erreur lors de la vérification des doublons d\'email : ' + error.message);
+    }
+};
+
 router.get('/', checkApiKey, async (req, res) => {
     try {
         const customersSnapshot = await db.collection('customers').get();
@@ -30,6 +47,12 @@ router.get('/:id', async (req, res) => {
 router.post('/', validateCreateCustomer, async (req, res) => {
     try {
         const newCustomer = req.body;
+
+        const isDuplicate = await checkDuplicateEmail(newCustomer.email);
+        if (isDuplicate) {
+            return res.status(400).send('Un client avec cet email existe déjà.');
+        }
+
         const docRef = await db.collection('customers').add(newCustomer);
         res.status(201).send('Client créé avec son ID : ' + docRef.id);
     } catch (error) {
@@ -47,6 +70,11 @@ router.put('/:id', validateUpdateCustomer, async (req, res) => {
         
         const updatedCustomer = req.body;
         
+        const isDuplicate = await checkDuplicateEmail(updatedCustomer.email, req.params.id);
+        if (isDuplicate) {
+            return res.status(400).send('Un client avec cet email existe déjà.');
+        }
+
         await db.collection('customers').doc(req.params.id).set(updatedCustomer, { merge: true });
         res.status(200).send('Client mis à jour');
     } catch (error) {

@@ -68,6 +68,7 @@ const checkApiKey = (req, res, next) => {
     }
 };
 
+
 module.exports = {
     validateCreateCustomer,
     validateUpdateCustomer,

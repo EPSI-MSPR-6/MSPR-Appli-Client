@@ -48,7 +48,7 @@ describe('Customers API', () => {
         return await request(app)
             .delete(`/customers/${id}`);
     };
- 
+
     const verifyClientPubSub = async (clientId) => {
         const message = Buffer.from(JSON.stringify({ action: 'VERIF_CLIENT', clientId })).toString('base64');
         return await request(app)
@@ -99,7 +99,6 @@ describe('Customers API', () => {
             expect(response.text).toBe('Client supprimé');
         });
     });
-
 
     describe('Tests Pub/Sub', () => {
         test('Pub/Sub - VERIF_CLIENT - Client Inexistant', async () => {
@@ -167,7 +166,6 @@ describe('Customers API', () => {
         });
     });
 
-
     describe('Tests403', () => {
         test('Erreur_403_GetCustomers', async () => {
             const invalidApiKey = 'invalid-api-key';
@@ -200,6 +198,14 @@ describe('Customers API', () => {
     });
 
     describe('Tests400', () => {
+        let customerId;
+        let newCustomerId;
+    
+        beforeAll(async () => {
+            const response = await createCustomer({ nom: 'Test', email: 'jesuis.untest@exemple.com' });
+            customerId = response.text.split('Client créé avec son ID : ')[1];
+        });
+
         test('Erreur_400_CreateCustomer_XEmail', async () => {
             const response = await createCustomer({ nom: 'Test' }); 
 
@@ -311,6 +317,22 @@ describe('Customers API', () => {
 
             expect(response.status).toBe(400);
             expect(response.text).toBe('Le champ pays contient des caractères invalides.');
+        });
+
+        test('Erreur_400_CreateCustomer_DuplicateEmail', async () => {
+            const duplicateCustomer = { nom: 'Duplicate Test', email: 'jesuis.untest@exemple.com' };
+            const response = await createCustomer(duplicateCustomer);
+            expect(response.status).toBe(400);
+            expect(response.text).toBe('Un client avec cet email existe déjà.');
+        });
+    
+        test('Erreur_400_UpdateCustomer_DuplicateEmail', async () => {
+            const newCustomerResponse = await createCustomer({ nom: 'New Customer', email: 'new.customer@example.com' });
+            const newCustomerId = newCustomerResponse.text.split('Client créé avec son ID : ')[1];
+    
+            const response = await updateCustomer(newCustomerId, { email: 'jesuis.untest@exemple.com' });
+            expect(response.status).toBe(400);
+            expect(response.text).toBe('Un client avec cet email existe déjà.');
         });
     });
 

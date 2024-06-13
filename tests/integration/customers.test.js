@@ -228,10 +228,10 @@ describe('Customers API', () => {
         });
 
         test('Erreur_400_UpdateCustomer_EditID', async () => {
-            const response = await updateCustomer(customerId, { id_client: 'newId', nom: 'Test 2', email: 'jesuis.untest2@exemple.com' });
+            const response = await updateCustomer(customerId, { id: 'newId', nom: 'Test-Deux', email: 'jesuis.untest2@exemple.com' });
 
             expect(response.status).toBe(400);
-            expect(response.text).toBe('Le champ id_client ne peut pas être modifié.');
+            expect(response.text).toBe('Le champ id ne peut pas être modifié.');
         });
 
         test('Erreur_400_UpdateCustomer_ValidEmail', async () => {

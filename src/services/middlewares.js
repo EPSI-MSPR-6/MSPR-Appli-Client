@@ -49,8 +49,8 @@ const validateCreateCustomer = (req, res, next) => {
 };
 
 const validateUpdateCustomer = (req, res, next) => {
-    if (req.body.id_client) {
-        return res.status(400).send("Le champ id_client ne peut pas être modifié.");
+    if (req.body.id) {
+        return res.status(400).send("Le champ id ne peut pas être modifié.");
     }
     const error = validateFields(req.body, false);
     if (error) {

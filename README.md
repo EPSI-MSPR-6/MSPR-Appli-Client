@@ -54,3 +54,28 @@ L'objectif de cette API est de gérer les informations des clients, y compris la
 | PUT     | /customers/{id}           | Met à jour une fiche client                 |
 | DELETE  | /customers/{id}           | Supprime une fiche client                   |
 | POST    | /customers/pubsub         | Lecture PubSub + Fonctions                  |
+
+## Body Autorisé par requête POST/PUT
+
+1. Requête /customers (POST)
+```json
+{
+  "nom": "",
+  "email": "",
+  "adresse": "",
+  "ville": "",
+  "code_postal_pays": ""
+}
+// avec nom et email obligatoire
+```
+
+2. Requête /customers/{id} (PUT)
+```json
+{
+  "nom": "",
+  "email": "",
+  "adresse": "",
+  "ville": "",
+  "code_postal_pays": ""
+}
+```

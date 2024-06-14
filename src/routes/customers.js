@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../firebase.js');
 const { validateCreateCustomer, validateUpdateCustomer, checkApiKey } = require('../services/middlewares.js');
-const { publishMessage } = require('../services/pubsub.js');
+const { publishMessage, subscribeMessage } = require('../services/pubsub.js');
 
 
 const checkDuplicateEmail = async (email, customerId = null) => {
@@ -107,15 +107,30 @@ router.delete('/:id', async (req, res) => {
 router.get('/:id/orders', async (req, res) => {
     try {
         const clientId = req.params.id;
+        console.log(`Client ID reçu pour récupération des commandes: ${clientId}`);
 
-        
-        await publishMessage('client-actions', {
-            action: 'GET_ORDERS',
-            clientId: clientId
+        await publishMessage('client-getting-orders-actions', {
+            action: 'GET_ORDERS_BY_CLIENT',
+            clientId: clientId,
+            message: 'Get orders for client'
         });
+        console.log(`Message publié pour récupération des commandes du client ${clientId}`);
 
+        subscribeMessage('projects/mspr-payetonkawa-58875/subscriptions/my-orders', async (message) => {
+            console.log('Message reçu du souscription Pub/Sub');
+
+            const data = Buffer.from(message.data, 'base64').toString();
+            const parsedData = JSON.parse(data);
+            console.log(`Données du message reçu: ${data}`);
+
+            if (parsedData.clientId === clientId && parsedData.action === 'ORDERS_BY_CLIENT') {
+                console.log(`Commandes trouvées pour le client ${clientId}:`, parsedData.orders);
+                res.status(200).json(parsedData.orders);
+            }
+        });
     } catch (error) {
-        res.status(500).send('Erreur lors de l\'envoi de la demande de récupération des commandes : ' + error.message);
+        console.error('Erreur lors de la récupération des commandes du client:', error);
+        res.status(500).send('Erreur lors de la récupération des commandes du client : ' + error.message);
     }
 });
 

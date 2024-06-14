@@ -20,6 +20,24 @@ async function publishMessage(topicName, data) {
     }
 }
 
+async function subscribeMessage(subscriptionName, messageHandler) {
+  const subscription = pubSubClient.subscription(subscriptionName);
+
+  const messageListener = message => {
+      messageHandler(message);
+      message.ack();
+  };
+
+  subscription.on('message', messageListener);
+
+  subscription.on('error', error => {
+      console.error('Error with subscription:', error);
+  });
+
+  console.log(`Subscribed to ${subscriptionName}`);
+}
+
 module.exports = {
-    publishMessage
+    publishMessage, 
+    subscribeMessage
 };

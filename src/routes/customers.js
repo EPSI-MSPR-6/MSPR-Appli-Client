@@ -104,7 +104,22 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
-router.post('/pubsub', async (req, res) => {
+router.get('/:id/orders', async (req, res) => {
+    try {
+        const clientId = req.params.id;
+
+        
+        await publishMessage('client-actions', {
+            action: 'GET_ORDERS',
+            clientId: clientId
+        });
+
+    } catch (error) {
+        res.status(500).send('Erreur lors de l\'envoi de la demande de récupération des commandes : ' + error.message);
+    }
+});
+
+router.post('/pubsub', checkApiKey, async (req, res) => {
     try {
         const message = req.body.message;
 

@@ -49,10 +49,11 @@ describe('Customers API', () => {
             .delete(`/customers/${id}`);
     };
 
-    const verifyClientPubSub = async (clientId) => {
+    const verifyClientPubSub = async (clientId, apiKey = ApiKey) => {
         const message = Buffer.from(JSON.stringify({ action: 'VERIF_CLIENT', clientId })).toString('base64');
         return await request(app)
             .post('/customers/pubsub')
+            .set('x-api-key', apiKey)
             .send({ message: { data: message } });
     };
 
@@ -88,7 +89,7 @@ describe('Customers API', () => {
         });
 
         test('Pub/Sub - VERIF_CLIENT - Client Existe', async () => {
-            const response = await verifyClientPubSub(customerId);
+            const response = await verifyClientPubSub(customerId, ApiKey);
             expect(response.status).toBe(200);
             expect(response.text).toBe('Client vérifié');
         });
@@ -105,7 +106,7 @@ describe('Customers API', () => {
             const invalidClientId = 'nonexistent-client-id';
             publishMessage.mockResolvedValueOnce();
 
-            const response = await verifyClientPubSub(invalidClientId);
+            const response = await verifyClientPubSub(invalidClientId, ApiKey);
             expect(response.status).toBe(200);
             expect(response.text).toBe('Action de suppression publiée');
             expect(publishMessage).toHaveBeenCalledWith('client-actions', {
@@ -124,6 +125,7 @@ describe('Customers API', () => {
 
             const response = await request(app)
                 .post('/customers/pubsub')
+                .set('x-api-key', ApiKey)
                 .send(message);
             expect(response.status).toBe(400);
             expect(response.text).toBe('Action non reconnue');
@@ -136,6 +138,7 @@ describe('Customers API', () => {
 
             const response = await request(app)
                 .post('/customers/pubsub')
+                .set('x-api-key', ApiKey)
                 .send(message);
             expect(response.status).toBe(400);
             expect(response.text).toBe('Format de message non valide');
@@ -160,6 +163,7 @@ describe('Customers API', () => {
     
             const response = await request(app)
                 .post('/customers/pubsub')
+                .set('x-api-key', ApiKey)
                 .send(message);
             expect(response.status).toBe(500);
             expect(response.text).toMatch(/Erreur lors de la vérification du client : /);

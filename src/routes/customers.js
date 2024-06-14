@@ -119,7 +119,7 @@ router.get('/:id/orders', async (req, res) => {
     }
 });
 
-router.post('/pubsub', checkApiKey, async (req, res) => {
+router.post('/pubsub', async (req, res) => {
     try {
         const message = req.body.message;
 

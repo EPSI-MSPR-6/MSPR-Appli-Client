@@ -4,7 +4,7 @@ const db = require('../firebase.js');
 const { validateCreateCustomer, validateUpdateCustomer, checkApiKey } = require('../services/middlewares.js');
 const { publishMessage, subscribeMessage } = require('../services/pubsub.js');
 
-
+// Fonction Vérification Mail Unique
 const checkDuplicateEmail = async (email, customerId = null) => {
     try {
         let query = db.collection('customers').where('email', '==', email);
@@ -21,29 +21,7 @@ const checkDuplicateEmail = async (email, customerId = null) => {
     }
 };
 
-router.get('/', checkApiKey, async (req, res) => {
-    try {
-        const customersSnapshot = await db.collection('customers').get();
-        const customers = customersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        res.status(200).json(customers);
-    } catch (error) {
-        res.status(500).send('Erreur lors de la récupération des clients : ' + error.message);
-    }
-});
-
-router.get('/:id', async (req, res) => {
-    try {
-        const customerDoc = await db.collection('customers').doc(req.params.id).get();
-        if (!customerDoc.exists) {
-            res.status(404).send('Client non trouvé');
-        } else {
-            res.status(200).json({ id: customerDoc.id, ...customerDoc.data() });
-        }
-    } catch (error) {
-        res.status(500).send('Erreur lors de la récupération du client par ID : ' + error.message);
-    }
-});
-
+// Création d'un Client
 router.post('/', validateCreateCustomer, async (req, res) => {
     try {
         const newCustomer = req.body;
@@ -60,6 +38,61 @@ router.post('/', validateCreateCustomer, async (req, res) => {
     }
 });
 
+// Récupération de la liste des clients
+router.get('/', checkApiKey, async (req, res) => {
+    try {
+        const customersSnapshot = await db.collection('customers').get();
+        const customers = customersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        res.status(200).json(customers);
+    } catch (error) {
+        res.status(500).send('Erreur lors de la récupération des clients : ' + error.message);
+    }
+});
+
+// Récupération d'un client via son ID
+router.get('/:id', async (req, res) => {
+    try {
+        const customerDoc = await db.collection('customers').doc(req.params.id).get();
+        if (!customerDoc.exists) {
+            res.status(404).send('Client non trouvé');
+        } else {
+            res.status(200).json({ id: customerDoc.id, ...customerDoc.data() });
+        }
+    } catch (error) {
+        res.status(500).send('Erreur lors de la récupération du client par ID : ' + error.message);
+    }
+});
+
+// Récupération de la liste des commandes d'un client
+router.get('/:id/orders', async (req, res) => {
+    try {
+        const clientId = req.params.id;
+        const customerDoc = await db.collection('customers').doc(clientId).get();
+        if (!customerDoc.exists) {
+            return res.status(400).send('Le client n\'existe pas');
+        }
+
+        await publishMessage('client-getting-orders-actions', {
+            action: 'GET_ORDERS_BY_CLIENT',
+            clientId: clientId,
+            message: 'Get orders for client'
+        });
+
+        subscribeMessage('projects/mspr-payetonkawa-58875/subscriptions/my-orders', async (message) => {
+
+            const data = Buffer.from(message.data, 'base64').toString();
+            const parsedData = JSON.parse(data);
+
+            if (parsedData.clientId === clientId && parsedData.action === 'ORDERS_BY_CLIENT') {
+                res.status(200).json(parsedData.orders);
+            }
+        });
+    } catch (error) {
+        res.status(500).send('Erreur lors de la récupération des commandes du client : ' + error.message);
+    }
+});
+
+// Mis à jour d'un client 
 router.put('/:id', validateUpdateCustomer, async (req, res) => {
     try {
         const customerDoc = await db.collection('customers').doc(req.params.id).get();
@@ -82,6 +115,7 @@ router.put('/:id', validateUpdateCustomer, async (req, res) => {
     }
 });
 
+// Suppression d'un client
 router.delete('/:id', async (req, res) => {
     try {
         const customerDoc = await db.collection('customers').doc(req.params.id).get();
@@ -104,36 +138,7 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
-router.get('/:id/orders', async (req, res) => {
-    try {
-        const clientId = req.params.id;
-        console.log(`Client ID reçu pour récupération des commandes: ${clientId}`);
-
-        await publishMessage('client-getting-orders-actions', {
-            action: 'GET_ORDERS_BY_CLIENT',
-            clientId: clientId,
-            message: 'Get orders for client'
-        });
-        console.log(`Message publié pour récupération des commandes du client ${clientId}`);
-
-        subscribeMessage('projects/mspr-payetonkawa-58875/subscriptions/my-orders', async (message) => {
-            console.log('Message reçu du souscription Pub/Sub');
-
-            const data = Buffer.from(message.data, 'base64').toString();
-            const parsedData = JSON.parse(data);
-            console.log(`Données du message reçu: ${data}`);
-
-            if (parsedData.clientId === clientId && parsedData.action === 'ORDERS_BY_CLIENT') {
-                console.log(`Commandes trouvées pour le client ${clientId}:`, parsedData.orders);
-                res.status(200).json(parsedData.orders);
-            }
-        });
-    } catch (error) {
-        console.error('Erreur lors de la récupération des commandes du client:', error);
-        res.status(500).send('Erreur lors de la récupération des commandes du client : ' + error.message);
-    }
-});
-
+// Récupération des messages Pubsubs ( Abonnement Push )
 router.post('/pubsub', async (req, res) => {
     try {
         const message = req.body.message;

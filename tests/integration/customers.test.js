@@ -3,10 +3,12 @@ const express = require('express');
 const customersRouter = require('../../src/routes/customers.js');
 const db = require('../../src/firebase.js');
 const { setupFirebaseTestEnv, teardownFirebaseTestEnv } = require('../firebaseTestEnv.js');
-const { publishMessage } = require('../../src/services/pubsub.js');
+const { publishMessage, subscribeMessage } = require('../../src/services/pubsub.js');
 
+// Mock de publication de message PubSub
 jest.mock('../../src/services/pubsub.js', () => ({
-    publishMessage: jest.fn()
+    publishMessage: jest.fn(),
+    subscribeMessage: jest.fn()
 }));
 
 const ApiKey = process.env.API_KEY
@@ -15,8 +17,9 @@ const app = express();
 app.use(express.json());
 app.use('/customers', customersRouter);
 
-describe('Customers API', () => {
+describe('Tests API Clients', () => {
     beforeAll(async () => {
+        
         await setupFirebaseTestEnv();
     });
     
@@ -57,7 +60,8 @@ describe('Customers API', () => {
             .send({ message: { data: message } });
     };
 
-    describe('ClientAPI', () => {
+    // Début des tests
+    describe('Tests Généraux', () => {
         test('Création Client', async () => {
             const response = await createCustomer({ nom: 'Test', email: 'jesuis.untest@exemple.com' });
 
@@ -94,6 +98,31 @@ describe('Customers API', () => {
             expect(response.text).toBe('Client vérifié');
         });
 
+        test('Récupération des commandes d\'un client existant', async () => {
+            const publishMessageMock = publishMessage.mockResolvedValueOnce();
+            const subscribeMessageMock = subscribeMessage.mockImplementationOnce((subscriptionName, messageHandler) => {
+                const messageData = {
+                    action: 'ORDERS_BY_CLIENT',
+                    clientId: customerId,
+                    orders: [{ orderId: 'order1' }, { orderId: 'order2' }]
+                };
+                const message = {
+                    data: Buffer.from(JSON.stringify(messageData)).toString('base64')
+                };
+                messageHandler(message);
+            });
+
+            const response = await request(app).get(`/customers/${customerId}/orders`)
+            expect(response.status).toBe(200);
+            expect(response.body).toEqual([{ orderId: 'order1' }, { orderId: 'order2' }]);
+            expect(publishMessageMock).toHaveBeenCalledWith('client-getting-orders-actions', {
+                action: 'GET_ORDERS_BY_CLIENT',
+                clientId: customerId,
+                message: 'Get orders for client'
+            });
+            expect(subscribeMessageMock).toHaveBeenCalledWith('projects/mspr-payetonkawa-58875/subscriptions/my-orders', expect.any(Function));
+        });
+
         test('Suppression Client', async () => {
             const response = await deleteCustomer(customerId);
             expect(response.status).toBe(200);
@@ -101,7 +130,7 @@ describe('Customers API', () => {
         });
     });
 
-    describe('Tests Pub/Sub', () => {
+    describe('Tests Erreurs Pub/Sub', () => {
         test('Pub/Sub - VERIF_CLIENT - Client Inexistant', async () => {
             const invalidClientId = 'nonexistent-client-id';
             publishMessage.mockResolvedValueOnce();
@@ -114,59 +143,6 @@ describe('Customers API', () => {
                 clientId: invalidClientId,
                 message: 'Client account deletion'
             });
-        });
-
-        test('Pub/Sub - Action Inconnue', async () => {
-            const message = {
-                message: {
-                    data: Buffer.from(JSON.stringify({ action: 'UNKNOWN_ACTION' })).toString('base64')
-                }
-            };
-
-            const response = await request(app)
-                .post('/customers/pubsub')
-                .set('x-api-key', ApiKey)
-                .send(message);
-            expect(response.status).toBe(400);
-            expect(response.text).toBe('Action non reconnue');
-        });
-
-        test('Pub/Sub - Echec ( Format non valide )', async () => {
-            const message = {
-                message: {}
-            };
-
-            const response = await request(app)
-                .post('/customers/pubsub')
-                .set('x-api-key', ApiKey)
-                .send(message);
-            expect(response.status).toBe(400);
-            expect(response.text).toBe('Format de message non valide');
-        });
-
-        test('Pub/Sub - VERIF_CLIENT - Echec ( Test 500 )', async () => {
-            const message = {
-                message: {
-                    data: Buffer.from(JSON.stringify({
-                        action: 'VERIF_CLIENT',
-                        clientId: 'nonExistentClient'
-                    })).toString('base64')
-                }
-            };
-    
-            jest.spyOn(db, 'collection').mockImplementationOnce(() => {
-                return {
-                    doc: jest.fn().mockReturnThis(),
-                    get: jest.fn().mockRejectedValue(new Error('Test error'))
-                };
-            });
-    
-            const response = await request(app)
-                .post('/customers/pubsub')
-                .set('x-api-key', ApiKey)
-                .send(message);
-            expect(response.status).toBe(500);
-            expect(response.text).toMatch(/Erreur lors de la vérification du client : /);
         });
     });
 
@@ -199,11 +175,37 @@ describe('Customers API', () => {
             expect(response.status).toBe(404);
             expect(response.text).toMatch(/Client non trouvé/);
         });
+        
+        test('Pub/Sub - Action Inconnue', async () => {
+            const message = {
+                message: {
+                    data: Buffer.from(JSON.stringify({ action: 'UNKNOWN_ACTION' })).toString('base64')
+                }
+            };
+
+            const response = await request(app)
+                .post('/customers/pubsub')
+                .set('x-api-key', ApiKey)
+                .send(message);
+            expect(response.status).toBe(400);
+            expect(response.text).toBe('Action non reconnue');
+        });
+
+        test('Pub/Sub - Echec ( Format non valide )', async () => {
+            const message = {
+                message: {}
+            };
+
+            const response = await request(app)
+                .post('/customers/pubsub')
+                .send(message);
+            expect(response.status).toBe(400);
+            expect(response.text).toBe('Format de message non valide');
+        });
     });
 
     describe('Tests400', () => {
         let customerId;
-        let newCustomerId;
     
         beforeAll(async () => {
             const response = await createCustomer({ nom: 'Test', email: 'jesuis.untest@exemple.com' });
@@ -250,6 +252,13 @@ describe('Customers API', () => {
 
             expect(response.status).toBe(400);
             expect(response.text).toBe('Les champs suivants ne sont pas autorisés : e_mail');
+        });
+
+        test('Erreur_400_GetOrdersByClientID_InvalidClient', async () => {
+            const invalidClientId = 'nonexistent-client-id';
+            const response = await request(app).get(`/customers/${invalidClientId}/orders`)
+            expect(response.status).toBe(400);
+            expect(response.text).toBe('Le client n\'existe pas');
         });
 
         // Tests Regex pour création et mise à jour
@@ -323,6 +332,7 @@ describe('Customers API', () => {
             expect(response.text).toBe('Le champ pays contient des caractères invalides.');
         });
 
+        // Erreurs de Dupplication 
         test('Erreur_400_CreateCustomer_DuplicateEmail', async () => {
             const duplicateCustomer = { nom: 'Duplicate Test', email: 'jesuis.untest@exemple.com' };
             const response = await createCustomer(duplicateCustomer);
@@ -374,6 +384,38 @@ describe('Customers API', () => {
             const response = await deleteCustomer('test');
             expect(response.status).toBe(500);
             expect(response.text).toMatch(/Erreur lors de la suppression du client : /);
+        });
+
+        test('Pub/Sub - VERIF_CLIENT - Echec ( Test 500 )', async () => {
+            const message = {
+                message: {
+                    data: Buffer.from(JSON.stringify({
+                        action: 'VERIF_CLIENT',
+                        clientId: 'nonExistentClient'
+                    })).toString('base64')
+                }
+            };
+    
+            jest.spyOn(db, 'collection').mockImplementationOnce(() => {
+                return {
+                    doc: jest.fn().mockReturnThis(),
+                    get: jest.fn().mockRejectedValue(new Error('Test error'))
+                };
+            });
+    
+            const response = await request(app)
+                .post('/customers/pubsub')
+                .set('x-api-key', ApiKey)
+                .send(message);
+            expect(response.status).toBe(500);
+            expect(response.text).toMatch(/Erreur lors de la vérification du client : /);
+        });
+        
+        test('Erreur lors de la récupération des commandes du client', async () => {
+            jest.spyOn(db, 'collection').mockImplementation(() => { throw new Error(); });
+            const response = await request(app).get(`/customers/${customerId}/orders`).set('x-api-key', ApiKey);
+            expect(response.status).toBe(500);
+            expect(response.text).toMatch(/Erreur lors de la récupération des commandes du client : /);
         });
     });
 });

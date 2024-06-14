@@ -6,6 +6,7 @@ const postalCodeRegex = /^\d{5}(-\d{4})?$/;
 const countryRegex = /^[a-zA-Z\s'-]+$/;
 const allowedFields = ['nom', 'adresse', 'ville', 'code_postal', 'pays', 'email'];
 
+// Validation des inputs entrants
 const validateFields = (fields, isCreate) => {
     const { email, nom, adresse, ville, code_postal, pays } = fields;
 
@@ -40,6 +41,7 @@ const validateFields = (fields, isCreate) => {
     return null;
 };
 
+// Vérification Inputs Création Client
 const validateCreateCustomer = (req, res, next) => {
     const error = validateFields(req.body, true);
     if (error) {
@@ -48,6 +50,7 @@ const validateCreateCustomer = (req, res, next) => {
     next();
 };
 
+// Vérification Inputs Mis à jour Client
 const validateUpdateCustomer = (req, res, next) => {
     if (req.body.id) {
         return res.status(400).send("Le champ id ne peut pas être modifié.");

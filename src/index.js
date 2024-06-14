@@ -9,12 +9,9 @@ app.use(bodyParser.json());
 app.use('/customers', customerRoutes);
 
 app.get('/', (req, res) => {
-    res.send('Bienvenue');
+    res.send('Bienvenue sur l\'API Clients');
 });
 
-app.post('/', (req, res) => {
-    res.status(405).send('Méthode non autorisée');
-});
 
 app.listen(port, () => {
     console.log(`L'API Clients est exécutée à partir du port ${port}`);

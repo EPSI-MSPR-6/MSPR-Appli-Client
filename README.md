@@ -31,8 +31,13 @@ Répositoire git d'une des trois API indépendantes (Clients) permettant de gér
    ```bash
    npm start
    ```
-
 L'API sera accessible à l'adresse `http://localhost:8080` ( ou modifiez le port utilisé dans index.js s'il est déjà utilisé ).
+
+5. Démarrez les tests grâce à jest :
+
+   ```bash
+   npm test
+   ```
 
 ## Objectif de l'API
 
@@ -40,10 +45,12 @@ L'objectif de cette API est de gérer les informations des clients, y compris la
 
 ## Endpoints de l'API
 
-| Méthode | Endpoint           | Description                              |
-|---------|--------------------|------------------------------------------|
-| GET     | /customers         | Récupère une liste de clients            |
-| GET     | /customers/{id}    | Récupère un client par son identifiant   |
-| POST    | /customers         | Crée un nouveau client                   |
-| PUT     | /customers/{id}    | Met à jour une fiche client              |
-| DELETE  | /customers/{id}    | Supprime une fiche client                |
+| Méthode | Endpoint                  | Description                                 |
+|---------|---------------------------|---------------------------------------------|
+| POST    | /customers                | Crée un nouveau client                      |
+| GET     | /customers                | Récupère une liste de clients               |
+| GET     | /customers/{id}           | Récupère un client par son identifiant      |
+| GET     | /customers/{id}/orders    | Récupère la liste des commandes du client   |
+| PUT     | /customers/{id}           | Met à jour une fiche client                 |
+| DELETE  | /customers/{id}           | Supprime une fiche client                   |
+| POST    | /customers/pubsub         | Lecture PubSub + Fonctions                  |

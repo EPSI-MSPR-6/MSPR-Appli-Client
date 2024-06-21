@@ -1,0 +1,267 @@
+{
+    "swagger": "2.0",
+    "info": {
+      "version": "1.0.0",
+      "title": "API Clients",
+      "description": "API permettant de gérer les clients"
+    },
+    "host": "localhost:8081",
+    "basePath": "/customers",
+    "schemes": [
+      "http"
+    ],
+    "securityDefinitions": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "name": "x-api-key",
+        "in": "header"
+      }
+    },
+    "paths": {
+      "/": {
+        "post": {
+          "summary": "Création d'un client",
+          "tags": ["Clients"],
+          "parameters": [
+            {
+              "in": "body",
+              "name": "client",
+              "description": "L'objet Client qui doit être envoyé",
+              "required": true,
+              "schema": {
+                "$ref": "#/definitions/ClientInput"
+              }
+            }
+          ],
+          "responses": {
+            "201": {
+              "description": "Client créé avec succès"
+            },
+            "400": {
+              "description": "Erreur de validation"
+            },
+            "500": {
+              "description": "Erreur serveur"
+            }
+          }
+        },
+        "get": {
+          "summary": "Récupère la liste des clients",
+          "tags": ["Clients"],
+          "responses": {
+            "200": {
+              "description": "Une liste des clients",
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/Client"
+                }
+              }
+            },
+            "403": {
+                "description": "Erreur d'authentification"
+              },
+            "500": {
+              "description": "Erreur Serveur"
+            }
+          },
+          "security": [
+            {
+              "ApiKeyAuth": []
+            }
+          ]
+        }
+      },
+      "/{id}": {
+        "get": {
+          "summary": "Récupération d'un client via ID",
+          "tags": ["Clients"],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "id",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Un Objet Client",
+              "schema": {
+                "$ref": "#/definitions/Client"
+              }
+            },
+            "404": {
+              "description": "Client non trouvé"
+            },
+            "500": {
+              "description": "Erreur Serveur"
+            }
+          }
+        },
+        "/{id}/orders": {
+          "get": {
+            "summary": "Récupération des commandes d'un client",
+            "tags": ["Clients"],
+            "parameters": [
+              {
+                "in": "path",
+                "name": "id",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Une liste de commandes",
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                }
+              },
+              "404": {
+                "description": "Client non trouvé"
+              },
+              "500": {
+                "description": "Erreur Serveur"
+              }
+            }
+          }
+        },
+        "put": {
+          "summary": "Mise à jour Client",
+          "tags": ["Clients"],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "id",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            },
+            {
+              "in": "body",
+              "name": "customer",
+              "description": "Objet Client avec des modifications",
+              "required": true,
+              "schema": {
+                "$ref": "#/definitions/ClientInput"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Client modifié"
+            },
+            "400": {
+              "description": "Erreur de validation"
+            },
+            "404": {
+              "description": "Client non trouvé"
+            },
+            "500": {
+              "description": "Erreur Serveur"
+            }
+          }
+        },
+        "delete": {
+          "summary": "Suppression Client",
+          "tags": ["Clients"],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "id",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Client supprimé"
+            },
+            "404": {
+              "description": "Client non trouvé"
+            },
+            "500": {
+              "description": "Erreur Serveur"
+            }
+          }
+        }
+      }
+    },
+    "definitions": {
+    "Client": {
+        "type": "object",
+        "properties": {
+        "id": {
+            "type": "string",
+            "example": "1a2b3c4d5e"
+        },
+        "nom": {
+            "type": "string",
+            "example": "John Doe"
+        },
+        "email": {
+            "type": "string",
+            "example": "john.doe@gmail.com"
+        },
+        "adresse": {
+            "type": "string",
+            "example": "123 Rue de la Paix"
+        },
+        "ville": {
+            "type": "string",
+            "example": "Paris"
+        },
+        "code_postal": {
+            "type": "string",
+            "example": "75000"
+        },
+        "pays": {
+            "type": "string",
+            "example": "France"
+        }
+        }
+    },
+    "ClientInput": {
+        "type": "object",
+        "properties": {
+        "nom": {
+            "type": "string",
+            "example": "John Doe"
+        },
+        "email": {
+            "type": "string",
+            "example": "john.doe@gmail.com"
+        },
+        "adresse": {
+            "type": "string",
+            "example": "123 Rue de la Paix"
+        },
+        "ville": {
+            "type": "string",
+            "example": "Paris"
+        },
+        "code_postal": {
+            "type": "string",
+            "example": "75000"
+        },
+        "pays": {
+            "type": "string",
+            "example": "France"
+        }
+        },
+        "required": ["nom", "email"]
+    }
+    }
+  }
+  

@@ -2,12 +2,14 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const swaggerUi = require('swagger-ui-express');
 const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
 const customerRoutes = require('./routes/customers.js');
 const app = express();
 const port = 8080;
 
-const swaggerDocument = JSON.parse(fs.readFileSync('./src/swagger.json', 'utf8'));
+const swaggerPath = path.join(__dirname, 'swagger.json');
+const swaggerDocument = JSON.parse(fs.readFileSync(swaggerPath, 'utf8'));
 
 app.use(bodyParser.json());
 app.use('/customers', customerRoutes);

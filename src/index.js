@@ -6,7 +6,7 @@ const fs = require('fs');
 require('dotenv').config();
 const customerRoutes = require('./routes/customers.js');
 const app = express();
-const port = 8081;
+const port = 8080;
 
 const swaggerDocument = JSON.parse(fs.readFileSync('./src/swagger.json', 'utf8'));
 
